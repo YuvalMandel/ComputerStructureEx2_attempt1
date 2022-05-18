@@ -424,9 +424,9 @@ int main(int argc, char **argv) {
         }
 	}
 
-	double L1MissRate = L1Misses/L1AcceseeNum;
-	double L2MissRate = L2Misses/L2AcceseeNum;
-	double avgAccTime = (L1AcceseeNum*L1Cyc + L2AcceseeNum*L2Cyc + L2Misses*MemCyc)/L1AcceseeNum;
+	double L1MissRate =  (double)L1Misses/(double)L1AcceseeNum;
+	double L2MissRate =  (double)L2Misses/ (double)L2AcceseeNum;
+	double avgAccTime =  (double)(L1AcceseeNum*L1Cyc + L2AcceseeNum*L2Cyc + L2Misses*MemCyc)/(double)L1AcceseeNum;
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
