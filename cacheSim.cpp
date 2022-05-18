@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <math.h>
 
 using std::FILE;
 using std::string;
@@ -12,6 +13,13 @@ using std::endl;
 using std::cerr;
 using std::ifstream;
 using std::stringstream;
+
+class Entry {       // The class
+public:             // Access specifier
+    unsigned long int tag;
+    bool valid = false;
+    bool dirty = false;
+};
 
 int main(int argc, char **argv) {
 
@@ -62,6 +70,33 @@ int main(int argc, char **argv) {
 		}
 	}
 
+    unsigned L1BlockNum = L1Size - BSize;
+    unsigned L2BlockNum = L2Size - BSize;
+
+    unsigned L1SetsNum = L1BlockNum - L1Assoc;
+    unsigned L2SetsNum = L2BlockNum - L2Assoc;
+
+    unsigned int L1Misses = 0;
+    unsigned int L2Misses = 0;
+    unsigned int L1AcceseeNum = 0;
+    unsigned int L2AcceseeNum = 0;
+
+    // Build cache
+
+    // Build L1
+    Entry L1[(int)pow(2,L1Assoc)][(int)pow(2,L1BlockNum-L1Assoc)];
+    unsigned int L1Counts[(int)pow(2,L1Assoc)];
+    for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
+        L1Counts[i] = i;
+    }
+
+    // Build L2
+    Entry L2[(int)pow(2,L2Assoc)][(int)pow(2,L2BlockNum-L2Assoc)];
+    unsigned int L2Counts[(int)pow(2,L2Assoc)];
+    for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
+        L2Counts[i] = i;
+    }
+
 	while (getline(file, line)) {
 
 		stringstream ss(line);
@@ -74,24 +109,324 @@ int main(int argc, char **argv) {
 		}
 
 		// DEBUG - remove this line
-		cout << "operation: " << operation;
+//		cout << "operation: " << operation;
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
 		// DEBUG - remove this line
-		cout << ", address (hex)" << cutAddress;
+//		cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
-		// DEBUG - remove this line
-		cout << " (dec) " << num << endl;
+        unsigned int L1tag = num >> (BSize + L1SetsNum);
+        unsigned int L1set = (num << (32 - (BSize + L1SetsNum)));
+        L1set = L1set >>  (31 - L1SetsNum);
+        L1set = L1set >>  1;
 
+        bool found = false;
+
+        if(operation == 'w'){
+            if(WrAlloc){
+                L1AcceseeNum += 1;
+                for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
+                    if(L1[i][L1set].valid && L1[i][L1set].tag == L1tag){
+                        L1[i][L1set].dirty = true;
+                        found = true;
+                        unsigned prevL1Count = L1Counts[i];
+                        L1Counts[i] =  pow(2, L1Assoc) - 1;
+                        for (int j = 0; j < L1Assoc; ++j) {
+                            if(j != i && L1Counts[j] > prevL1Count){
+                                L1Counts[j]--;
+                            }
+                        }
+                    }
+                }
+
+                if(!found){
+                    // No hit on L1.
+                    L1Misses+=1;
+                    // Accessee L2
+                    L2AcceseeNum += 1;
+                    unsigned int L2tag = num >> (BSize + L2SetsNum);
+                    unsigned int L2set = (num << 32 - (BSize + L2SetsNum));
+                    L2set = L2set >> 31 - L2SetsNum;
+                    L2set = L2set >> 1;
+                    for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
+                        if(L2[i][L2set].valid && L2[i][L2set].tag == L2tag){
+                            found = true;
+                            L2[i][L2set].dirty = true;
+                            unsigned prevL2Count = L2Counts[i];
+                            L2Counts[i] =  pow(2, L2Assoc) - 1;
+                            for (int j = 0; j < L2Assoc; ++j) {
+                                if(j != i && L2Counts[j] > prevL2Count){
+                                    L2Counts[j]--;
+                                }
+                            }
+                            // Update L1
+                            for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                                if(L1Counts[j] == 0){
+                                    if(L1[j][L1set].dirty){
+                                        // Recalc L2 net tag.
+                                        unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                        unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
+                                        unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
+                                        NewL2set = NewL2set >> 31 - L2SetsNum;
+                                        NewL2set = NewL2set >> 1;
+
+                                        for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
+                                            if(L2[k][NewL2set].tag == NewL2tag){
+                                                L2[k][NewL2set].dirty = true;
+                                            }
+                                        }
+                                    }
+                                    L1[j][L1set].dirty = false;
+                                    L1[j][L1set].tag = L1tag;
+                                    L1[j][L1set].valid = true;
+                                    L1Counts[j] = pow(2, L1Assoc) - 1;
+                                }else{
+                                    L1Counts[j]--;
+                                }
+                            }
+                        }
+                    }
+                    if(!found){
+                        // L2 Miss
+                        L2Misses++;
+
+                        // Update L1
+                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                            if(L1Counts[j] == 0){
+                                if(L1[j][L1set].dirty){
+                                    // Recalc L2 net tag.
+                                    unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                    unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
+                                    unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
+                                    NewL2set = NewL2set >> 31 - L2SetsNum;
+                                    NewL2set = NewL2set >> 1;
+
+                                    for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
+                                        if(L2[k][NewL2set].tag == NewL2tag){
+                                            L2[k][NewL2set].dirty = true;
+                                        }
+                                    }
+                                }
+                                L1[j][L1set].dirty = false;
+                                L1[j][L1set].tag = L1tag;
+                                L1[j][L1set].valid = true;
+                                L1Counts[j] = pow(2, L1Assoc) - 1;
+                            }else{
+                                L1Counts[j]--;
+                            }
+                        }
+
+                        // Update L2
+                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                            if(L2Counts[j] == 0){
+                                L2[j][L2set].dirty = false;
+                                L2[j][L2set].tag = L2tag;
+                                L2[j][L2set].valid = true;
+                                L2Counts[j] = pow(2, L2Assoc) - 1;
+                            }else{
+                                L2Counts[j]--;
+                            }
+                        }
+
+                    }
+                }
+            }else{
+                L1AcceseeNum += 1;
+                for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
+                    if(L1[i][L1set].valid && L1[i][L1set].tag == L1tag){
+                        L1[i][L1set].dirty = true;
+                        found = true;
+                        unsigned prevL1Count = L1Counts[i];
+                        L1Counts[i] =  pow(2, L1Assoc) - 1;
+                        for (int j = 0; j < L1Assoc; ++j) {
+                            if(j != i && L1Counts[j] > prevL1Count){
+                                L1Counts[j]--;
+                            }
+                        }
+                    }
+                }
+
+                if(!found){
+                    // No hit on L1.
+                    L1Misses+=1;
+                    // Accessee L2
+                    L2AcceseeNum += 1;
+                    unsigned int L2tag = num >> (BSize + L2SetsNum);
+                    unsigned int L2set = (num << 32 - (BSize + L2SetsNum));
+                    L2set = L2set >> 31 - L2SetsNum;
+                    L2set = L2set >> 1;
+                    for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
+                        if(L2[i][L2set].valid && L2[i][L2set].tag == L2tag){
+                            found = true;
+                            L2[i][L2set].dirty = true;
+                            unsigned prevL2Count = L2Counts[i];
+                            L2Counts[i] =  pow(2, L2Assoc) - 1;
+                            for (int j = 0; j < L2Assoc; ++j) {
+                                if(j != i && L2Counts[j] > prevL2Count){
+                                    L2Counts[j]--;
+                                }
+                            }
+                        }
+                    }
+                    if(!found){
+                        // L2 Miss
+                        L2Misses++;
+
+                        // Update L1
+                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                            if(L1Counts[j] == 0){
+                                if(L1[j][L1set].dirty){
+                                    // Recalc L2 net tag.
+                                    unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                    unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
+                                    unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
+                                    NewL2set = NewL2set >> 31 - L2SetsNum;
+                                    NewL2set = NewL2set >> 1;
+
+                                    for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
+                                        if(L2[k][NewL2set].tag == NewL2tag){
+                                            L2[k][NewL2set].dirty = true;
+                                        }
+                                    }
+                                }
+                                L1[j][L1set].dirty = false;
+                                L1[j][L1set].tag = L1tag;
+                                L1[j][L1set].valid = true;
+                                L1Counts[j] = pow(2, L1Assoc) - 1;
+                            }else{
+                                L1Counts[j]--;
+                            }
+                        }
+
+                        // Update L2
+                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                            if(L2Counts[j] == 0){
+                                L2[j][L2set].dirty = false;
+                                L2[j][L2set].tag = L2tag;
+                                L2[j][L2set].valid = true;
+                                L2Counts[j] = pow(2, L2Assoc) - 1;
+                            }else{
+                                L2Counts[j]--;
+                            }
+                        }
+
+                    }
+                }
+            }
+        }else{
+            // Read command
+            L1AcceseeNum += 1;
+            for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
+                if(L1[i][L1set].valid && L1[i][L1set].tag == L1tag){
+                    found = true;
+                    unsigned prevL1Count = L1Counts[i];
+                    L1Counts[i] =  pow(2, L1Assoc) - 1;
+                    for (int j = 0; j < L1Assoc; ++j) {
+                        if(j != i && L1Counts[j] > prevL1Count){
+                            L1Counts[j]--;
+                        }
+                    }
+                }
+            }
+
+            if(!found){
+                // No hit on L1.
+                L1Misses+=1;
+                // Accessee L2
+                L2AcceseeNum += 1;
+                unsigned int L2tag = num >> (BSize + L2SetsNum);
+                unsigned int L2set = (num << (32 - (BSize + L2SetsNum)));
+                L2set = L2set >> (31 - L2SetsNum);
+                L2set = L2set >> 1;
+                for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
+                    if(L2[i][L2set].valid && L2[i][L2set].tag == L2tag){
+                        found = true;
+                        unsigned prevL2Count = L2Counts[i];
+                        L2Counts[i] =  pow(2, L2Assoc) - 1;
+                        for (int j = 0; j < L2Assoc; ++j) {
+                            if(j != i && L2Counts[j] > prevL2Count){
+                                L2Counts[j]--;
+                            }
+                        }
+                        // Update L1
+                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                            if(L1Counts[j] == 0){
+                                if(L1[j][L1set].dirty){
+                                    // Recalc L2 net tag.
+                                    unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                    unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
+                                    unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
+                                    NewL2set = NewL2set >> 31 - L2SetsNum;
+                                    NewL2set = NewL2set >> 1;
+
+                                    for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
+                                        if(L2[k][NewL2set].tag == NewL2tag){
+                                            L2[k][NewL2set].dirty = true;
+                                        }
+                                    }
+                                }
+                                L1[j][L1set].dirty = false;
+                                L1[j][L1set].tag = L1tag;
+                                L1[j][L1set].valid = true;
+                                L1Counts[j] = pow(2, L1Assoc) - 1;
+                            }else{
+                                L1Counts[j]--;
+                            }
+                        }
+                    }
+                }
+                if(!found){
+                    // L2 Miss
+                    L2Misses++;
+
+                    // Update L1
+                    for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                        if(L1Counts[j] == 0){
+                            if(L1[j][L1set].dirty){
+                                // Recalc L2 net tag.
+                                unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
+                                unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum)) >>  32 - L2SetsNum;
+                                NewL2set = NewL2set >> 1;
+
+                                for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
+                                    if(L2[k][NewL2set].tag == NewL2tag){
+                                        L2[k][NewL2set].dirty = true;
+                                    }
+                                }
+                            }
+                            L1[j][L1set].dirty = false;
+                            L1[j][L1set].tag = L1tag;
+                            L1[j][L1set].valid = true;
+                            L1Counts[j] = pow(2, L1Assoc) - 1;
+                        }else{
+                            L1Counts[j]--;
+                        }
+                    }
+
+                    // Update L2
+                    for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                        if(L2Counts[j] == 0){
+                            L2[j][L2set].dirty = false;
+                            L2[j][L2set].tag = L2tag;
+                            L2[j][L2set].valid = true;
+                            L2Counts[j] = pow(2, L2Assoc) - 1;
+                        }else{
+                            L2Counts[j]--;
+                        }
+                    }
+                }
+            }
+        }
 	}
 
-	double L1MissRate;
-	double L2MissRate;
-	double avgAccTime;
+	double L1MissRate = L1Misses/L1AcceseeNum;
+	double L2MissRate = L2Misses/L2AcceseeNum;
+	double avgAccTime = (L1AcceseeNum*L1Cyc + L2AcceseeNum*L2Cyc + L2Misses*MemCyc)/L1AcceseeNum;
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
