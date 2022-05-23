@@ -118,6 +118,7 @@ int main(int argc, char **argv) {
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
+        num = num >> 2; // Ignore2 LSB (2 right bits).
 
         unsigned int L1tag = num >> (BSize + L1SetsNum);
         unsigned int L1set = (num << (32 - (BSize + L1SetsNum)));
@@ -211,7 +212,7 @@ int main(int argc, char **argv) {
                                         }
                                     }
                                 }
-                                L1[j][L1set].dirty = false;
+                                L1[j][L1set].dirty = true;
                                 L1[j][L1set].tag = L1tag;
                                 L1[j][L1set].valid = true;
                                 L1Counts[j] = pow(2, L1Assoc) - 1;
@@ -396,6 +397,11 @@ int main(int argc, char **argv) {
                                 for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                     if(L2[k][NewL2set].tag == NewL2tag){
                                         L2[k][NewL2set].dirty = true;
+                                        L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                        unsigned prevL2Count = L2Counts[k];
+                                        for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
+                                            L2Counts[i]--;
+                                        }
                                     }
                                 }
                             }
