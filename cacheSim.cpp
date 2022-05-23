@@ -178,6 +178,11 @@ int main(int argc, char **argv) {
                                         for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                             if(L2[k][NewL2set].tag == NewL2tag){
                                                 L2[k][NewL2set].dirty = true;
+                                                L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                                unsigned prevL2Count = L2Counts[k];
+                                                for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
+                                                    L2Counts[i]--;
+                                                }
                                             }
                                         }
                                     }
@@ -209,6 +214,11 @@ int main(int argc, char **argv) {
                                     for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                         if(L2[k][NewL2set].tag == NewL2tag){
                                             L2[k][NewL2set].dirty = true;
+                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                            unsigned prevL2Count = L2Counts[k];
+                                            for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
+                                                L2Counts[i]--;
+                                            }
                                         }
                                     }
                                 }
@@ -291,6 +301,11 @@ int main(int argc, char **argv) {
                                     for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                         if(L2[k][NewL2set].tag == NewL2tag){
                                             L2[k][NewL2set].dirty = true;
+                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                            unsigned prevL2Count = L2Counts[k];
+                                            for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
+                                                L2Counts[i]--;
+                                            }
                                         }
                                     }
                                 }
@@ -367,6 +382,11 @@ int main(int argc, char **argv) {
                                     for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                         if(L2[k][NewL2set].tag == NewL2tag){
                                             L2[k][NewL2set].dirty = true;
+                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                            unsigned prevL2Count = L2Counts[k];
+                                            for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
+                                                L2Counts[i]--;
+                                            }
                                         }
                                     }
                                 }
