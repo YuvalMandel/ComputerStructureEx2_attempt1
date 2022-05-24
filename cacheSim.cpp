@@ -475,8 +475,8 @@ int main(int argc, char **argv) {
                                 for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
                                     if(L1[k][NewL1set].tag == NewL1tag &&  L1[k][NewL1set].valid){
                                         L1[k][NewL1set].valid = false;
-                                        L1[k][NewL1set].LRUrank =  pow(2, L2Assoc) - 1;
                                         unsigned prevL1Count = L1[k][NewL1set].LRUrank;
+                                        L1[k][NewL1set].LRUrank =  pow(2, L1Assoc) - 1;
                                         for (int i = 0; i <  (int)pow(2,L1Assoc); ++i) {
                                             if(L1[i][L1set].LRUrank >= k && i != k){
                                                 L1[i][L1set].LRUrank--;
