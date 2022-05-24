@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
-        num = num >> 2; // Ignore2 LSB (2 right bits).
+//        num = num >> 2; // Ignore2 LSB (2 right bits).
 
         unsigned int L1tag = num >> (BSize + L1SetsNum);
         unsigned int L1set = (num << (32 - (BSize + L1SetsNum)));
@@ -178,10 +178,12 @@ int main(int argc, char **argv) {
                                         for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                             if(L2[k][NewL2set].tag == NewL2tag){
                                                 L2[k][NewL2set].dirty = true;
-                                                L2Counts[k] =  pow(2, L2Assoc) - 1;
                                                 unsigned prevL2Count = L2Counts[k];
-                                                for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
-                                                    L2Counts[i]--;
+                                                L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                                for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
+                                                    if(L2Counts[i] >= k && i != k){
+                                                        L2Counts[i]--;
+                                                    }
                                                 }
                                             }
                                         }
@@ -200,6 +202,38 @@ int main(int argc, char **argv) {
                         // L2 Miss
                         L2Misses++;
 
+                        // Update L2
+                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                            if(L2Counts[j] == 0){
+
+                                // Recalc L1 set tag.
+                                unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
+                                unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
+                                unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
+                                NewL1set = NewL1set >> 1;
+
+                                for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
+                                    if (L1[k][NewL1set].tag == NewL1tag && L1[k][NewL1set].valid) {
+                                        L1[k][NewL1set].valid = false;
+                                        unsigned prevL1Count = L1Counts[k];
+                                        L1Counts[k] = pow(2, L2Assoc) - 1;
+                                        for (int i = 0; i < (int) pow(2, L1Assoc); ++i) {
+                                            if (L1Counts[i] >= k && i != k) {
+                                                L1Counts[i]--;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                L2[j][L2set].dirty = false;
+                                L2[j][L2set].tag = L2tag;
+                                L2[j][L2set].valid = true;
+                                L2Counts[j] = pow(2, L2Assoc) - 1;
+                            }else{
+                                L2Counts[j]--;
+                            }
+                        }
+
                         // Update L1
                         for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
                             if(L1Counts[j] == 0){
@@ -214,10 +248,12 @@ int main(int argc, char **argv) {
                                     for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                         if(L2[k][NewL2set].tag == NewL2tag){
                                             L2[k][NewL2set].dirty = true;
-                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
                                             unsigned prevL2Count = L2Counts[k];
-                                            for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
-                                                L2Counts[i]--;
+                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                            for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
+                                                if(L2Counts[i] >= k && i != k){
+                                                    L2Counts[i]--;
+                                                }
                                             }
                                         }
                                     }
@@ -230,19 +266,6 @@ int main(int argc, char **argv) {
                                 L1Counts[j]--;
                             }
                         }
-
-                        // Update L2
-                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
-                            if(L2Counts[j] == 0){
-                                L2[j][L2set].dirty = false;
-                                L2[j][L2set].tag = L2tag;
-                                L2[j][L2set].valid = true;
-                                L2Counts[j] = pow(2, L2Assoc) - 1;
-                            }else{
-                                L2Counts[j]--;
-                            }
-                        }
-
                     }
                 }
             }else{
@@ -287,6 +310,42 @@ int main(int argc, char **argv) {
                         // L2 Miss
                         L2Misses++;
 
+                        // Update L2
+                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                            if(L2Counts[j] == 0){
+
+                                // Go to L1 and remove the previous L2 val
+                                if(L2[j][L2set].valid){
+                                    // Recalc L1 set tag.
+                                    unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
+                                    unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
+                                    unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
+                                    NewL1set = NewL1set >> 1;
+
+                                    for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
+                                        if(L1[k][NewL1set].tag == NewL1tag &&  L1[k][NewL1set].valid){
+                                            L1[k][NewL1set].valid = false;
+                                            unsigned prevL1Count = L1Counts[k];
+                                            L1Counts[k] =  pow(2, L2Assoc) - 1;
+                                            for (int i = 0; i <  (int)pow(2,L1Assoc); ++i) {
+                                                if(L1Counts[i] >= k && i != k){
+                                                    L1Counts[i]--;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                }
+
+                                L2[j][L2set].dirty = false;
+                                L2[j][L2set].tag = L2tag;
+                                L2[j][L2set].valid = true;
+                                L2Counts[j] = pow(2, L2Assoc) - 1;
+                            }else{
+                                L2Counts[j]--;
+                            }
+                        }
+
                         // Update L1
                         for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
                             if(L1Counts[j] == 0){
@@ -301,10 +360,12 @@ int main(int argc, char **argv) {
                                     for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                         if(L2[k][NewL2set].tag == NewL2tag){
                                             L2[k][NewL2set].dirty = true;
-                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
                                             unsigned prevL2Count = L2Counts[k];
-                                            for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
-                                                L2Counts[i]--;
+                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                            for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
+                                                if(L2Counts[i] >= k && i != k){
+                                                    L2Counts[i]--;
+                                                }
                                             }
                                         }
                                     }
@@ -316,20 +377,8 @@ int main(int argc, char **argv) {
                             }else{
                                 L1Counts[j]--;
                             }
-                        }
 
-                        // Update L2
-                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
-                            if(L2Counts[j] == 0){
-                                L2[j][L2set].dirty = false;
-                                L2[j][L2set].tag = L2tag;
-                                L2[j][L2set].valid = true;
-                                L2Counts[j] = pow(2, L2Assoc) - 1;
-                            }else{
-                                L2Counts[j]--;
-                            }
                         }
-
                     }
                 }
             }
@@ -382,10 +431,12 @@ int main(int argc, char **argv) {
                                     for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                         if(L2[k][NewL2set].tag == NewL2tag){
                                             L2[k][NewL2set].dirty = true;
-                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
                                             unsigned prevL2Count = L2Counts[k];
-                                            for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
-                                                L2Counts[i]--;
+                                            L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                            for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
+                                                if(L2Counts[i] >= k && i != k){
+                                                    L2Counts[i]--;
+                                                }
                                             }
                                         }
                                     }
@@ -404,6 +455,42 @@ int main(int argc, char **argv) {
                     // L2 Miss
                     L2Misses++;
 
+                    // Update L2
+                    for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                        if(L2Counts[j] == 0){
+
+                            // Go to L1 and remove the previous L2 val
+                            if(L2[j][L2set].valid){
+                                // Recalc L1 set tag.
+                                unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
+                                unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
+                                unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
+                                NewL1set = NewL1set >> 1;
+
+                                for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
+                                    if(L1[k][NewL1set].tag == NewL1tag &&  L1[k][NewL1set].valid){
+                                        L1[k][NewL1set].valid = false;
+                                        L1Counts[k] =  pow(2, L2Assoc) - 1;
+                                        unsigned prevL1Count = L1Counts[k];
+                                        for (int i = 0; i <  (int)pow(2,L1Assoc); ++i) {
+                                            if(L1Counts[i] >= k && i != k){
+                                                L1Counts[i]--;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+
+                            L2[j][L2set].dirty = false;
+                            L2[j][L2set].tag = L2tag;
+                            L2[j][L2set].valid = true;
+                            L2Counts[j] = pow(2, L2Assoc) - 1;
+                        }else{
+                            L2Counts[j]--;
+                        }
+                    }
+
                     // Update L1
                     for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
                         if(L1Counts[j] == 0){
@@ -417,10 +504,12 @@ int main(int argc, char **argv) {
                                 for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
                                     if(L2[k][NewL2set].tag == NewL2tag){
                                         L2[k][NewL2set].dirty = true;
-                                        L2Counts[k] =  pow(2, L2Assoc) - 1;
                                         unsigned prevL2Count = L2Counts[k];
-                                        for (int i = k + 1; i <  (int)pow(2,L2Assoc); ++i) {
-                                            L2Counts[i]--;
+                                        L2Counts[k] =  pow(2, L2Assoc) - 1;
+                                        for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
+                                            if(L2Counts[i] >= k && i != k){
+                                                L2Counts[i]--;
+                                            }
                                         }
                                     }
                                 }
@@ -431,18 +520,6 @@ int main(int argc, char **argv) {
                             L1Counts[j] = pow(2, L1Assoc) - 1;
                         }else{
                             L1Counts[j]--;
-                        }
-                    }
-
-                    // Update L2
-                    for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
-                        if(L2Counts[j] == 0){
-                            L2[j][L2set].dirty = false;
-                            L2[j][L2set].tag = L2tag;
-                            L2[j][L2set].valid = true;
-                            L2Counts[j] = pow(2, L2Assoc) - 1;
-                        }else{
-                            L2Counts[j]--;
                         }
                     }
                 }
