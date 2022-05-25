@@ -136,13 +136,13 @@ int main(int argc, char **argv) {
             if(WrAlloc){
                 L1AcceseeNum += 1;
                 for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
-                    if(L1[i][L1set].valid && L1[i][L1set].tag == L1tag){
+                    if(L1[i][L1set].valid && (L1[i][L1set].tag == L1tag)){
                         L1[i][L1set].dirty = true;
                         found = true;
                         unsigned prevL1Count = L1[i][L1set].LRUrank;
                         L1[i][L1set].LRUrank =  pow(2, L1Assoc) - 1;
-                        for (int j = 0; j < L1Assoc; ++j) {
-                            if(j != i && L1[j][L1set].LRUrank > prevL1Count){
+                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                            if((j != i) && (L1[j][L1set].LRUrank > prevL1Count)){
                                 L1[j][L1set].LRUrank--;
                             }
                         }
@@ -159,13 +159,13 @@ int main(int argc, char **argv) {
                     L2set = L2set >> 31 - L2SetsNum;
                     L2set = L2set >> 1;
                     for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
-                        if(L2[i][L2set].valid && L2[i][L2set].tag == L2tag){
+                        if(L2[i][L2set].valid && (L2[i][L2set].tag == L2tag)){
                             found = true;
                             L2[i][L2set].dirty = true;
                             unsigned prevL2Rank = L2[i][L2set].LRUrank;
                             L2[i][L2set].LRUrank =  pow(2, L2Assoc) - 1;
-                            for (int j = 0; j < L2Assoc; ++j) {
-                                if(j != i && L2[j][L2set].LRUrank > prevL2Rank){
+                            for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                                if((j != i) && (L2[j][L2set].LRUrank > prevL2Rank)){
                                     L2[j][L2set].LRUrank--;
                                 }
                             }
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
                                                 unsigned prevL2Count = L2[k][L2set].LRUrank;
                                                 L2[k][L2set].LRUrank =  pow(2, L2Assoc) - 1;
                                                 for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
-                                                    if(L2[i][L2set].LRUrank >= k && i != k){
+                                                    if((L2[i][L2set].LRUrank >= k) && (i != k)){
                                                         L2[i][L2set].LRUrank--;
                                                     }
                                                 }
@@ -218,12 +218,13 @@ int main(int argc, char **argv) {
                                 NewL1set = NewL1set >> 1;
 
                                 for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
-                                    if (L1[k][NewL1set].tag == NewL1tag && L1[k][NewL1set].valid) {
+                                    if ((L1[k][NewL1set].tag == NewL1tag) && L1[k][NewL1set].valid) {
                                         L1[k][NewL1set].valid = false;
+                                        L1[k][NewL1set].dirty = false;
                                         unsigned prevL1Count = L1[k][NewL1set].LRUrank;
-                                        L1[k][NewL1set].LRUrank = pow(2, L2Assoc) - 1;
+                                        L1[k][NewL1set].LRUrank = pow(2, L1Assoc) - 1;
                                         for (int i = 0; i < (int) pow(2, L1Assoc); ++i) {
-                                            if (L1[i][NewL1set].LRUrank >= k && i != k) {
+                                            if ((L1[i][NewL1set].LRUrank >= k) && (i != k)) {
                                                 L1[i][NewL1set].LRUrank--;
                                             }
                                         }
@@ -256,7 +257,7 @@ int main(int argc, char **argv) {
                                             unsigned prevL2Count = L2[k][NewL2set].LRUrank;
                                             L2[k][NewL2set].LRUrank =  pow(2, L2Assoc) - 1;
                                             for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
-                                                if(L2[i][NewL2set].LRUrank >= k && i != k){
+                                                if((L2[i][NewL2set].LRUrank >= k) && (i != k)){
                                                     L2[i][NewL2set].LRUrank--;
                                                 }
                                             }
@@ -276,13 +277,13 @@ int main(int argc, char **argv) {
             }else{
                 L1AcceseeNum += 1;
                 for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
-                    if(L1[i][L1set].valid && L1[i][L1set].tag == L1tag){
+                    if(L1[i][L1set].valid && (L1[i][L1set].tag == L1tag)){
                         L1[i][L1set].dirty = true;
                         found = true;
                         unsigned prevL1Count = L1[i][L1set].LRUrank;
                         L1[i][L1set].LRUrank =  pow(2, L1Assoc) - 1;
-                        for (int j = 0; j < L1Assoc; ++j) {
-                            if(j != i && L1[j][L1set].LRUrank > prevL1Count){
+                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                            if((j != i) && (L1[j][L1set].LRUrank >= prevL1Count)){
                                 L1[j][L1set].LRUrank--;
                             }
                         }
@@ -299,13 +300,13 @@ int main(int argc, char **argv) {
                     L2set = L2set >> 31 - L2SetsNum;
                     L2set = L2set >> 1;
                     for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
-                        if(L2[i][L2set].valid && L2[i][L2set].tag == L2tag){
+                        if(L2[i][L2set].valid && (L2[i][L2set].tag == L2tag)){
                             found = true;
                             L2[i][L2set].dirty = true;
                             unsigned prevL2Count = L2[i][L2set].LRUrank;
                             L2[i][L2set].LRUrank =  pow(2, L2Assoc) - 1;
-                            for (int j = 0; j < L2Assoc; ++j) {
-                                if(j != i && L2[j][L2set].LRUrank > prevL2Count){
+                            for (int j = 0; j <  (int)pow(2, L2Assoc); ++j) {
+                                if((j != i) && (L2[j][L2set].LRUrank >= prevL2Count)){
                                     L2[j][L2set].LRUrank--;
                                 }
                             }
@@ -315,75 +316,76 @@ int main(int argc, char **argv) {
                         // L2 Miss
                         L2Misses++;
 
-                        // Update L2
-                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
-                            if(L2[j][L2set].LRUrank == 0){
-
-                                // Go to L1 and remove the previous L2 val
-                                if(L2[j][L2set].valid){
-                                    // Recalc L1 set tag.
-                                    unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
-                                    unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
-                                    unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
-                                    NewL1set = NewL1set >> 1;
-
-                                    for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
-                                        if(L1[k][NewL1set].tag == NewL1tag &&  L1[k][NewL1set].valid){
-                                            L1[k][NewL1set].valid = false;
-                                            unsigned prevL1Count = L1[k][NewL1set].LRUrank;
-                                            L1[k][NewL1set].LRUrank =  pow(2, L2Assoc) - 1;
-                                            for (int i = 0; i <  (int)pow(2,L1Assoc); ++i) {
-                                                if(L1[i][L1set].LRUrank >= k && i != k){
-                                                    L1[i][L1set].LRUrank--;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                }
-
-                                L2[j][L2set].dirty = false;
-                                L2[j][L2set].tag = L2tag;
-                                L2[j][L2set].valid = true;
-                                L2[j][L2set].LRUrank = pow(2, L2Assoc) - 1;
-                            }else{
-                                L2[j][L2set].LRUrank--;
-                            }
-                        }
-
-                        // Update L1
-                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
-                            if(L1[j][L1set].LRUrank == 0){
-                                if(L1[j][L1set].dirty){
-                                    // Recalc L2 net tag.
-                                    unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
-                                    unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
-                                    unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
-                                    NewL2set = NewL2set >> 31 - L2SetsNum;
-                                    NewL2set = NewL2set >> 1;
-
-                                    for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
-                                        if(L2[k][NewL2set].tag == NewL2tag){
-                                            L2[k][NewL2set].dirty = true;
-                                            unsigned prevL2Count = L2[k][NewL2set].LRUrank;
-                                            L2[k][NewL2set].LRUrank =  pow(2, L2Assoc) - 1;
-                                            for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
-                                                if(L2[i][NewL2set].LRUrank >= k && i != k){
-                                                    L2[i][NewL2set].LRUrank--;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                L1[j][L1set].dirty = false;
-                                L1[j][L1set].tag = L1tag;
-                                L1[j][L1set].valid = true;
-                                L1[j][L1set].LRUrank = pow(2, L1Assoc) - 1;
-                            }else{
-                                L1[j][L1set].LRUrank--;
-                            }
-
-                        }
+//                        // Update L2
+//                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+//                            if(L2[j][L2set].LRUrank == 0){
+//
+//                                // Go to L1 and remove the previous L2 val
+//                                if(L2[j][L2set].valid){
+//                                    // Recalc L1 set tag.
+//                                    unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
+//                                    unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
+//                                    unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
+//                                    NewL1set = NewL1set >> 1;
+//
+//                                    for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
+//                                        if(L1[k][NewL1set].tag == NewL1tag &&  L1[k][NewL1set].valid){
+//                                            L1[k][NewL1set].valid = false;
+//                                            L1[k][NewL1set].dirty = false;
+//                                            unsigned prevL1Count = L1[k][NewL1set].LRUrank;
+//                                            L1[k][NewL1set].LRUrank =  pow(2, L2Assoc) - 1;
+//                                            for (int i = 0; i <  (int)pow(2,L1Assoc); ++i) {
+//                                                if(L1[i][L1set].LRUrank >= k && i != k){
+//                                                    L1[i][L1set].LRUrank--;
+//                                                }
+//                                            }
+//                                        }
+//                                    }
+//
+//                                }
+//
+//                                L2[j][L2set].dirty = false;
+//                                L2[j][L2set].tag = L2tag;
+//                                L2[j][L2set].valid = true;
+//                                L2[j][L2set].LRUrank = pow(2, L2Assoc) - 1;
+//                            }else{
+//                                L2[j][L2set].LRUrank--;
+//                            }
+//                        }
+//
+//                        // Update L1
+//                        for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+//                            if(L1[j][L1set].LRUrank == 0){
+//                                if(L1[j][L1set].dirty){
+//                                    // Recalc L2 net tag.
+//                                    unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+//                                    unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
+//                                    unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
+//                                    NewL2set = NewL2set >> 31 - L2SetsNum;
+//                                    NewL2set = NewL2set >> 1;
+//
+//                                    for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
+//                                        if(L2[k][NewL2set].tag == NewL2tag){
+//                                            L2[k][NewL2set].dirty = true;
+//                                            unsigned prevL2Count = L2[k][NewL2set].LRUrank;
+//                                            L2[k][NewL2set].LRUrank =  pow(2, L2Assoc) - 1;
+//                                            for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
+//                                                if(L2[i][NewL2set].LRUrank >= k && i != k){
+//                                                    L2[i][NewL2set].LRUrank--;
+//                                                }
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                                L1[j][L1set].dirty = false;
+//                                L1[j][L1set].tag = L1tag;
+//                                L1[j][L1set].valid = true;
+//                                L1[j][L1set].LRUrank = pow(2, L1Assoc) - 1;
+//                            }else{
+//                                L1[j][L1set].LRUrank--;
+//                            }
+//
+//                        }
                     }
                 }
             }
@@ -391,12 +393,12 @@ int main(int argc, char **argv) {
             // Read command
             L1AcceseeNum += 1;
             for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
-                if(L1[i][L1set].valid && L1[i][L1set].tag == L1tag){
+                if(L1[i][L1set].valid && (L1[i][L1set].tag == L1tag)){
                     found = true;
                     unsigned prevL1Count = L1[i][L1set].LRUrank;
                     L1[i][L1set].LRUrank =  pow(2, L1Assoc) - 1;
-                    for (int j = 0; j < L1Assoc; ++j) {
-                        if(j != i && L1[j][L1set].LRUrank > prevL1Count){
+                    for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
+                        if((j != i) && (L1[j][L1set].LRUrank > prevL1Count)){
                             L1[j][L1set].LRUrank--;
                         }
                     }
@@ -413,12 +415,14 @@ int main(int argc, char **argv) {
                 L2set = L2set >> (31 - L2SetsNum);
                 L2set = L2set >> 1;
                 for (int i = 0; i < (int)pow(2,L2Assoc); ++i) {
-                    if(L2[i][L2set].valid && L2[i][L2set].tag == L2tag){
+                    if(L2[i][L2set].valid && (L2[i][L2set].tag == L2tag)){
                         found = true;
+                        bool previousL2DirtyBit = L2[i][L2set].dirty;
+//                        L2[i][L2set].dirty = false;
                         unsigned prevL2Count = L2[i][L2set].LRUrank;
                         L2[i][L2set].LRUrank =  pow(2, L2Assoc) - 1;
-                        for (int j = 0; j < L2Assoc; ++j) {
-                            if(j != i && L2[j][L2set].LRUrank > prevL2Count){
+                        for (int j = 0; j < (int)pow(2,L2Assoc); ++j) {
+                            if((j != i) && (L2[j][L2set].LRUrank > prevL2Count)){
                                 L2[j][L2set].LRUrank--;
                             }
                         }
@@ -439,14 +443,14 @@ int main(int argc, char **argv) {
                                             unsigned prevL2Count = L2[k][NewL2set].LRUrank;
                                             L2[k][NewL2set].LRUrank =  pow(2, L2Assoc) - 1;
                                             for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
-                                                if(L2[i][NewL2set].LRUrank >= k && i != k){
+                                                if((L2[i][NewL2set].LRUrank >= k) && (i != k)){
                                                     L2[i][NewL2set].LRUrank--;
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                L1[j][L1set].dirty = false;
+                                L1[j][L1set].dirty = previousL2DirtyBit;
                                 L1[j][L1set].tag = L1tag;
                                 L1[j][L1set].valid = true;
                                 L1[j][L1set].LRUrank = pow(2, L1Assoc) - 1;
@@ -473,12 +477,13 @@ int main(int argc, char **argv) {
                                 NewL1set = NewL1set >> 1;
 
                                 for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
-                                    if(L1[k][NewL1set].tag == NewL1tag &&  L1[k][NewL1set].valid){
+                                    if((L1[k][NewL1set].tag == NewL1tag) &&  L1[k][NewL1set].valid){
                                         L1[k][NewL1set].valid = false;
+                                        L1[k][NewL1set].dirty = false;
                                         unsigned prevL1Count = L1[k][NewL1set].LRUrank;
                                         L1[k][NewL1set].LRUrank =  pow(2, L1Assoc) - 1;
                                         for (int i = 0; i <  (int)pow(2,L1Assoc); ++i) {
-                                            if(L1[i][L1set].LRUrank >= k && i != k){
+                                            if((L1[i][L1set].LRUrank >= k) && (i != k)){
                                                 L1[i][L1set].LRUrank--;
                                             }
                                         }
@@ -512,7 +517,7 @@ int main(int argc, char **argv) {
                                         unsigned prevL2Count = L2[k][NewL2set].LRUrank;
                                         L2[k][NewL2set].LRUrank =  pow(2, L2Assoc) - 1;
                                         for (int i = 0; i <  (int)pow(2,L2Assoc); ++i) {
-                                            if(L2[i][NewL2set].LRUrank >= k && i != k){
+                                            if((L2[i][NewL2set].LRUrank >= k) && (i != k)){
                                                 L2[i][NewL2set].LRUrank--;
                                             }
                                         }
