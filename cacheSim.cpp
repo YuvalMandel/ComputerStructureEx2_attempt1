@@ -504,7 +504,7 @@ int main(int argc, char **argv) {
                     // Update L1
                     for (int j = 0; j < (int)pow(2,L1Assoc); ++j) {
                         if(L1[j][L1set].LRUrank == 0){
-                            if(L1[j][L1set].dirty){
+                            if(L1[j][L1set].valid && L1[j][L1set].dirty){
                                 // Recalc L2 net tag.
                                 unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
                                 unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
