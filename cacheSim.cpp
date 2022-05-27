@@ -175,6 +175,7 @@ int main(int argc, char **argv) {
                                     if(L1[j][L1set].dirty){
                                         // Recalc L2 net tag.
                                         unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                        newNum = newNum << BSize;
                                         unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
                                         unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
                                         NewL2set = NewL2set >> 31 - L2SetsNum;
@@ -213,8 +214,10 @@ int main(int argc, char **argv) {
 
                                 // Recalc L1 set tag.
                                 unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
+                                newNum = newNum << BSize;
                                 unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
-                                unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
+                                unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum));
+                                NewL1set = NewL1set >> 31 - L1SetsNum;
                                 NewL1set = NewL1set >> 1;
 
                                 for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
@@ -246,6 +249,7 @@ int main(int argc, char **argv) {
                                 if(L1[j][L1set].dirty){
                                     // Recalc L2 net tag.
                                     unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                    newNum = newNum << BSize;
                                     unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
                                     unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
                                     NewL2set = NewL2set >> 31 - L2SetsNum;
@@ -275,6 +279,7 @@ int main(int argc, char **argv) {
                     }
                 }
             }else{
+                // write no allocate
                 L1AcceseeNum += 1;
                 for (int i = 0; i < (int)pow(2,L1Assoc); ++i) {
                     if(L1[i][L1set].valid && (L1[i][L1set].tag == L1tag)){
@@ -432,6 +437,7 @@ int main(int argc, char **argv) {
                                 if(L1[j][L1set].dirty){
                                     // Recalc L2 net tag.
                                     unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                    newNum = newNum << BSize;
                                     unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
                                     unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
                                     NewL2set = NewL2set >> 31 - L2SetsNum;
@@ -472,8 +478,10 @@ int main(int argc, char **argv) {
                             if(L2[j][L2set].valid){
                                 // Recalc L1 set tag.
                                 unsigned newNum =  ((L2[j][L2set].tag << L2SetsNum) + L2set);
+                                newNum = newNum << BSize;
                                 unsigned NewL1tag = newNum >> (BSize + L1SetsNum);
-                                unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum)) >>  32 - L1SetsNum;
+                                unsigned NewL1set = (newNum << 32 - (BSize + L1SetsNum));
+                                NewL1set = NewL1set >> 31 - L1SetsNum;
                                 NewL1set = NewL1set >> 1;
 
                                 for (int k = 0; k < (int)pow(2,L1Assoc); ++k) {
@@ -507,8 +515,10 @@ int main(int argc, char **argv) {
                             if(L1[j][L1set].valid && L1[j][L1set].dirty){
                                 // Recalc L2 net tag.
                                 unsigned newNum =  ((L1[j][L1set].tag << L1SetsNum) + L1set);
+                                newNum = newNum << BSize;
                                 unsigned NewL2tag = newNum >> (BSize + L2SetsNum);
-                                unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum)) >>  32 - L2SetsNum;
+                                unsigned NewL2set = (newNum << 32 - (BSize + L2SetsNum));
+                                NewL2set = NewL2set >> 31 - L2SetsNum;
                                 NewL2set = NewL2set >> 1;
 
                                 for (int k = 0; k < (int)pow(2,L2Assoc); ++k) {
